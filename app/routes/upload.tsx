@@ -8,7 +8,7 @@ import { generateUUID } from '~/lib/utils';
 import { prepareInstructions, AIResponseFormat } from '../../constants/';
 
 export default function Upload() {
-  const { auth, isLoading, fs, ai, kv } = usePuterStore();
+  const { fs, ai, kv } = usePuterStore();
   const navigate = useNavigate();
 
   const [isProcessing, setIsProcessing] = useState(false);

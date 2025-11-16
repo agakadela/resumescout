@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface Suggestion {
   type: 'good' | 'improve';
   tip: string;
@@ -11,7 +9,6 @@ interface ATSProps {
 }
 
 export default function ATS({ score, suggestions }: ATSProps) {
-  // Determine background gradient based on score
   const gradientClass =
     score > 69
       ? 'from-green-100'
@@ -19,7 +16,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
         ? 'from-yellow-100'
         : 'from-red-100';
 
-  // Determine icon based on score
   const iconSrc =
     score > 69
       ? '/icons/ats-good.svg'
@@ -27,7 +23,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
         ? '/icons/ats-warning.svg'
         : '/icons/ats-bad.svg';
 
-  // Determine subtitle based on score
   const subtitle =
     score > 69 ? 'Great Job!' : score > 49 ? 'Good Start' : 'Needs Improvement';
 
@@ -35,7 +30,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
     <div
       className={`bg-linear-to-b ${gradientClass} to-white rounded-2xl shadow-md w-full p-6`}
     >
-      {/* Top section with icon and headline */}
       <div className='flex items-center gap-4 mb-6'>
         <img src={iconSrc} alt='ATS Score Icon' className='w-12 h-12' />
         <div>
@@ -43,7 +37,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
         </div>
       </div>
 
-      {/* Description section */}
       <div className='mb-6'>
         <h3 className='text-xl font-semibold mb-2'>{subtitle}</h3>
         <p className='text-gray-600 mb-4'>
@@ -51,7 +44,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
           Applicant Tracking Systems used by employers.
         </p>
 
-        {/* Suggestions list */}
         <div className='space-y-3'>
           {suggestions.map((suggestion, index) => (
             <div key={index} className='flex items-start gap-3'>
@@ -78,7 +70,6 @@ export default function ATS({ score, suggestions }: ATSProps) {
         </div>
       </div>
 
-      {/* Closing encouragement */}
       <p className='text-gray-700 italic'>
         Keep refining your resume to improve your chances of getting past ATS
         filters and into the hands of recruiters.
