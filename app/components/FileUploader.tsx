@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { formatSize } from '~/lib/utils';
 
 interface FileUploaderProps {
   onFileUpload: (file: File | null) => void;
@@ -32,24 +33,43 @@ export default function FileUploader({ onFileUpload }: FileUploaderProps) {
     <div className='w-full gradient-border' {...getRootProps()}>
       <input {...getInputProps()} />
       <div className='space-y-4 cursor-pointer'>
-        <div className='mx-auto w-16 h-16 flex items-center justify-center'>
-          <img src='/icons/info.svg' alt='Info' className='size-10' />
-        </div>
         {file ? (
-          <div className='flex items-center gap-2'>
-            <img
-              src={URL.createObjectURL(file)}
-              alt='File'
-              className='size-10'
-            />
-            <span>{file.name}</span>
+          <div
+            className='uploader-selected-file'
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <img src='/images/pdf.png' alt='PDF' className='size-10' />
+            <div className='flex items-center space-x-3'>
+              <div>
+                <p className='text-sm font-medium text-gray-700 truncate max-w-xs'>
+                  {file.name}
+                </p>
+                <p className='text-sm text-gray-500'>{formatSize(file.size)}</p>
+              </div>
+            </div>
+            <button
+              className='p-2 cursor-pointer'
+              onClick={(e) => {
+                onFileUpload(null);
+              }}
+            >
+              <img src='/icons/cross.svg' alt='Cross' className='size-4' />
+            </button>
           </div>
         ) : (
           <div>
-            <p className='tet-lg text-gray-500'>
-              <span className='font-semibold'>Click to upload</span>
+            <div className='mx-auto w-16 h-16 flex items-center justify-center mb-2'>
+              <img src='/icons/info.svg' alt='Info' className='size-10' />
+            </div>
+            <p className='text-lg text-gray-500'>
+              <span className='font-semibold'>Click to upload</span> or drag and
+              drop
             </p>
-            <p className='tet-lg text-gray-500'>PDF (max. 15MB)</p>
+            <p className='text-lg text-gray-500'>
+              PDF (max. {formatSize(15 * 1024 * 1024)})
+            </p>
           </div>
         )}
       </div>

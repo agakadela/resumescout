@@ -1,8 +1,16 @@
 import NavBar from '~/components/NavBar';
 import { useState } from 'react';
 import FileUploader from '~/components/FileUploader';
+import { usePuterStore } from '~/lib/puter';
+import { useNavigate } from 'react-router';
+import { convertPdfToImage } from '~/lib/pdf2img';
+import { generateUUID } from '~/lib/utils';
+import { prepareInstructions, AIResponseFormat } from '../../constants/';
 
 export default function Upload() {
+  const { auth, isLoading, fs, ai, kv } = usePuterStore();
+  const navigate = useNavigate();
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusText, setStatusText] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -10,10 +18,103 @@ export default function Upload() {
   const handleFileUpload = (file: File | null) => {
     setFile(file);
   };
-  const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+
+  const handleAnalyze = async ({
+    companyName,
+    jobTitle,
+    jobDescription,
+    file,
+  }: {
+    companyName: string;
+    jobTitle: string;
+    jobDescription: string;
+    file: File | null;
+  }) => {
+    if (!file) {
+      setStatusText('Please upload a resume before analyzing');
+      throw new Error('Please upload a resume before analyzing');
+    }
+
     setIsProcessing(true);
     setStatusText('Processing your resume...');
+    const uploadedFile = await fs.upload([file]);
+    console.log('uploadedFile', uploadedFile);
+    if (!uploadedFile) {
+      setStatusText('Failed to upload your resume');
+      setIsProcessing(false);
+      throw new Error('Failed to upload your resume');
+    }
+    console.log('uploadedFile', uploadedFile);
+    setStatusText('Converting to image...');
+    const imageConversion = await convertPdfToImage(file);
+    console.log('imageConversion', imageConversion);
+    if (!imageConversion.file) {
+      setStatusText(
+        imageConversion.error ?? 'Failed to convert your resume to image'
+      );
+    }
+
+    setStatusText('Uploading the image...');
+    const uploadedImage = await fs.upload([imageConversion.file as Blob]);
+    if (!uploadedImage) {
+      setStatusText('Failed to upload the image');
+      setIsProcessing(false);
+      throw new Error('Failed to upload the image');
+    }
+    setStatusText('Preparing data for analysis...');
+    const uuid = generateUUID();
+    const data = {
+      id: uuid,
+      resumePath: uploadedFile.path,
+      imagePath: uploadedImage.path,
+      companyName,
+      jobTitle,
+      jobDescription,
+      feedback: '',
+    };
+    await kv.set(`resume_${uuid}`, JSON.stringify(data));
+
+    setStatusText('Analyzing...');
+    const feedback = await ai.feedback(
+      uploadedImage.path,
+      prepareInstructions({
+        jobTitle,
+        jobDescription,
+        AIResponseFormat,
+      })
+    );
+    if (!feedback) {
+      setStatusText('Failed to analyze your resume');
+      setIsProcessing(false);
+      throw new Error('Failed to analyze your resume');
+    }
+    const feedbackText =
+      typeof feedback.message.content === 'string'
+        ? feedback.message.content
+        : feedback.message.content[0];
+    console.log('feedbackText', feedbackText);
+    data.feedback = JSON.parse(feedbackText.text);
+
+    await kv.set(`resume_${uuid}`, JSON.stringify(data.feedback));
+    setStatusText('Analysis complete');
+    setIsProcessing(false);
+    navigate(`/analysis/${uuid}`);
+  };
+
+  const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget.closest('form');
+    if (!form) return;
+    const formData = new FormData(form);
+    const companyName = formData.get('company-name') as string;
+    const jobTitle = formData.get('job-title') as string;
+    const jobDescription = formData.get('job-description') as string;
+
+    if (!companyName || !jobTitle || !jobDescription || !file) {
+      setStatusText('Please fill in all fields and upload a resume');
+      return;
+    }
+    handleAnalyze({ companyName, jobTitle, jobDescription, file });
   };
   return (
     <main className='bg-[url(/images/bg-main.svg)] bg-cover '>
