@@ -38,16 +38,14 @@ export default function Upload() {
     setIsProcessing(true);
     setStatusText('Processing your resume...');
     const uploadedFile = await fs.upload([file]);
-    console.log('uploadedFile', uploadedFile);
+
     if (!uploadedFile) {
       setStatusText('Failed to upload your resume');
       setIsProcessing(false);
       throw new Error('Failed to upload your resume');
     }
-    console.log('uploadedFile', uploadedFile);
     setStatusText('Converting to image...');
     const imageConversion = await convertPdfToImage(file);
-    console.log('imageConversion', imageConversion);
     if (!imageConversion.file) {
       setStatusText(
         imageConversion.error ?? 'Failed to convert your resume to image'
@@ -72,7 +70,7 @@ export default function Upload() {
       jobDescription,
       feedback: '',
     };
-    await kv.set(`resume_${uuid}`, JSON.stringify(data));
+    await kv.set(`resume:${uuid}`, JSON.stringify(data));
 
     setStatusText('Analyzing...');
     const feedback = await ai.feedback(
@@ -91,14 +89,13 @@ export default function Upload() {
     const feedbackText =
       typeof feedback.message.content === 'string'
         ? feedback.message.content
-        : feedback.message.content[0];
-    console.log('feedbackText', feedbackText);
-    data.feedback = JSON.parse(feedbackText.text);
+        : feedback.message.content[0].text;
+    data.feedback = JSON.parse(feedbackText);
 
     await kv.set(`resume_${uuid}`, JSON.stringify(data.feedback));
     setStatusText('Analysis complete');
     setIsProcessing(false);
-    navigate(`/analysis/${uuid}`);
+    navigate(`/resume/${uuid}`);
   };
 
   const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
